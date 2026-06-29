@@ -1,0 +1,22 @@
+{
+  "name": "备课组长管理系统",
+  "short_name": "备课组长",
+  "description": "管理初中各学校各年级各科目备课组长信息及3D办公室座位图",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f0f2f5",
+  "theme_color": "#1a237e",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
