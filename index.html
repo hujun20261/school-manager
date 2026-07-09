@@ -1,0 +1,2187 @@
+<!DOCTYPE html>
+<!-- 巅峰版 (Peak Edition) | 基于 V150 (6383b1c) | 纯净单文件版，数据通过「导出/导入 JSON」恢复 -->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>学校备课组管理 - 平面图版</title>
+    <style>
+        *, html { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-attachment: fixed;
+            min-height: 100dvh;
+            height: 100%;
+            color: #fff;
+            overflow-x: hidden;
+            user-select: none;
+            --desk-scale: 1;
+        }
+
+        .header { background: transparent; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 15px 20px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .header h1 { font-size: 17px; font-weight: 600; flex: 1; }
+        .back-btn { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; }
+
+        .search-bar { padding: 15px; }
+        .search-input { width: 100%; height: 46px; border: none; border-radius: 23px; padding: 0 20px; font-size: 15px; background: rgba(255,255,255,0.12); color: #fff; }
+        .search-input::placeholder { color: rgba(255,255,255,0.4); }
+
+        .legend { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 15px 15px; }
+        .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 12px; background: rgba(255,255,255,0.08); border-radius: 15px; }
+        .legend-dot { width: 14px; height: 14px; border-radius: 50%; }
+
+        .school-list { padding: 0 15px 100px; }
+        .school-card { background: linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%); border-radius: 20px; padding: 22px; margin-bottom: 15px; cursor: pointer; transition: all 0.3s ease; border: 1px solid rgba(255,255,255,0.1); }
+        .school-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
+        .school-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .school-name { font-size: 20px; font-weight: 700; }
+        .school-type-badge { background: rgba(52,152,219,0.3); color: #5dade2; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .school-address { font-size: 14px; color: rgba(255,255,255,0.6); margin-bottom: 12px; }
+        .school-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+        .school-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+        .school-action-btn { background: rgba(255,255,255,0.15); color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .school-action-btn:hover { background: rgba(255,255,255,0.25); }
+        .school-action-btn.danger { background: rgba(231,76,60,0.3); color: #e74c3c; }
+        .school-action-btn.danger:hover { background: rgba(231,76,60,0.5); }
+        .edit-toolbar { background: transparent; padding: 12px 15px; display: flex; align-items: center; gap: 15px; border: none; box-shadow: none; }
+        .edit-toolbar-item { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 14px; }
+        .edit-toolbar-item input[type="range"] { width: 120px; height: 6px; -webkit-appearance: none; background: rgba(255,255,255,0.2); border-radius: 3px; outline: none; }
+        .edit-toolbar-item input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #3498db; border-radius: 50%; cursor: pointer; }
+        .stat { text-align: center; flex: 1; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .stat-num { font-size: 22px; font-weight: 700; color: #4fc3f7; }
+        .stat-label { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+        .fab { position: fixed; bottom: 25px; right: 25px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #4fc3f7, #2196f3); border: none; color: #fff; font-size: 26px; cursor: pointer; box-shadow: 0 6px 25px rgba(79,195,247,0.4); z-index: 50; }
+
+        .detail-page { display: none; }
+
+        .grade-tabs { display: flex; gap: 10px; padding: 15px; overflow-x: auto; }
+        .grade-tab, .lesson-leader-tab { flex-shrink: 0; padding: 12px 24px; border-radius: 18px; font-size: 14px; font-weight: 600; border: none; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); cursor: pointer; }
+        .grade-tab.active { background: linear-gradient(135deg, #4fc3f7, #2196f3); color: #fff; }
+
+        .office-list { padding: 0 15px 100px; }
+
+        /* 办公室号列表 */
+        .office-number-list { display: flex; flex-direction: column; gap: 12px; }
+        .office-number-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .office-number-item:hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateX(5px);
+        }
+        .office-number { font-size: 18px; font-weight: 600; }
+        .office-number-arrow { font-size: 20px; color: rgba(255,255,255,0.5); }
+
+        /* 办公室详情视图 */
+        .office-detail-view { display: none; }
+
+        .office-wrapper {
+            margin-bottom: 25px;
+            display: block;
+            position: relative;
+            min-height: 500px;
+            padding: 0;
+        }
+
+        /* 办公室头部 */
+        /* office-header/actions/title removed - moved to ➕ menu */
+        .office-btn {
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: none;
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+        .office-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); }
+        .office-btn.danger:hover { background: rgba(231,76,60,0.5); }
+
+        /* 办公室房间 */
+        .office-room {
+            position: absolute;
+            background: transparent;
+            border-radius: 4px;
+            overflow: visible;
+            box-shadow: none;
+            border: 3px solid #8B7355;
+        }
+        /* 编辑模式下,办公室框架可拖拽移动位置 */
+        .office-room.office-movable {
+            cursor: move;
+        }
+        .office-room.office-movable:hover {
+            box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.4);
+        }
+
+        /* 调整大小的手柄 */
+        .resize-handle {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #3498db;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: opacity 0.2s;
+        }
+        .resize-handle.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .resize-handle:hover {
+            background: #2980b9;
+            transform: scale(1.3);
+        }
+        /* 角落手柄 */
+        .resize-se { right: -6px; bottom: -6px; cursor: se-resize; }
+        .resize-sw { left: -6px; bottom: -6px; cursor: sw-resize; }
+        .resize-ne { right: -6px; top: -6px; cursor: ne-resize; }
+        .resize-nw { left: -6px; top: -6px; cursor: nw-resize; }
+        /* 边缘手柄 */
+        .resize-n { left: 50%; top: -6px; transform: translateX(-50%); cursor: n-resize; }
+        .resize-s { left: 50%; bottom: -6px; transform: translateX(-50%); cursor: s-resize; }
+        .resize-e { right: -6px; top: 50%; transform: translateY(-50%); cursor: e-resize; }
+        .resize-w { left: -6px; top: 50%; transform: translateY(-50%); cursor: w-resize; }
+
+        .wall-3d { position: absolute; background: linear-gradient(180deg, #f5f0e8 0%, #e8dcc8 100%); transform-style: preserve-3d; }
+        .wall-back { top: 0; left: 0; right: 0; height: 32px; background: linear-gradient(180deg, #f5f0e8 0%, #e8dcc8 50%, #ddd0b8 100%); border-bottom: 3px solid #c4b49a; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 1; pointer-events: none; }
+        /* 左侧3D墙体 */
+        .wall-left-3d { top: 0; left: 0; width: 18px; bottom: 0; background: linear-gradient(90deg, #c4a882 0%, #d4b892 100%); border-right: 3px solid #b49872; transform: rotateY(-25deg); transform-origin: right center; z-index: 1; pointer-events: none; }
+        .wall-left-3d::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 32px; background: linear-gradient(180deg, #f5f0e8 0%, #e8dcc8 100%); }
+        /* 右侧3D墙体 */
+        .wall-right-3d { top: 0; right: 0; width: 18px; bottom: 0; background: linear-gradient(270deg, #c4a882 0%, #d4b892 100%); border-left: 3px solid #b49872; transform: rotateY(25deg); transform-origin: left center; z-index: 1; pointer-events: none; }
+        .wall-right-3d::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 32px; background: linear-gradient(180deg, #f5f0e8 0%, #e8dcc8 100%); }
+
+        /* 可拖拽的门窗 */
+        .room-element { position: absolute; cursor: move; z-index: 5; transition: outline 0.2s; }
+        .room-element:hover { outline: 2px dashed rgba(79,195,247,0.8); outline-offset: 2px; }
+
+        .door-el { width: 40px; height: 50px; background: linear-gradient(180deg, #D4A574 0%, #C49A6C 40%, #B8875A 100%); border: 3px solid #5C3A1E; border-radius: 2px; cursor: move; position: relative; box-shadow: inset -2px 0 0 rgba(0,0,0,0.12), inset 0 -2px 0 rgba(0,0,0,0.08); }
+        .door-el::before { content: ''; position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #F0D060, #C8A020); box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+        .door-el::after { content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%); width: 60%; height: 2px; background: rgba(92,58,30,0.25); border-radius: 1px; }
+        .window-el { min-width: 60px; min-height: 20px; background: #ADD8E6; border: 3px solid #5a8a9a; cursor: move; position: relative; }
+        .window-el::after { content: ''; position: absolute; top: 0; left: 50%; width: 2px; height: 100%; background: #5a8a9a; transform: translateX(-50%); pointer-events: none; }
+
+        /* 删除按钮 - 门窗 */
+        .delete-btn {
+            display: none;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 22px;
+            height: 22px;
+            background: #e74c3c;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 30;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(231,76,60,0.5);
+        }
+        .room-element.edit-mode .delete-btn { display: flex; }
+        .room-element.edit-mode .rotate-btn { display: flex; }
+        .room-element.edit-mode:hover .rotate-btn { display: flex; }
+
+        /* 办公室尺寸滑轨 */
+        .size-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .size-row:last-child { margin-bottom: 0; }
+        .size-row label { color: #fff; font-size: 13px; min-width: 100px; }
+
+        .floor-3d { position: absolute; bottom: 0; left: 0; right: 0; height: 36px; background: transparent; border-top: 3px solid transparent; z-index: 1; pointer-events: none; }
+        .ceiling-3d { position: absolute; top: 0; left: 0; right: 0; height: 26px; background: linear-gradient(180deg, #e8e0ff 0%, #d8d0ee 50%, #ccc4e8 100%); border-bottom: 3px solid #a898c8; z-index: 1; pointer-events: none; display: flex; align-items: center; justify-content: center; gap: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+        .ceiling-3d::before { content: '💡     💡     💡'; font-size: 12px; letter-spacing: 24px; color: #ffc107; text-shadow: 0 0 6px rgba(255,193,7,0.6); }
+        .ceiling-3d::after { display: none; }
+        /* 踢脚线/墙脚 */
+        .baseboard { position: absolute; height: 10px; background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 100%); z-index: 3; pointer-events: none; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .baseboard-bottom { bottom: 36px; left: 22px; right: 22px; }
+        .baseboard-left { top: 0; left: 0; width: 8px; bottom: 36px; }
+        .baseboard-right { top: 0; right: 0; width: 8px; bottom: 36px; }
+        .baseboard-top { top: 0; left: 22px; right: 22px; height: 8px; z-index: 2; background: linear-gradient(180deg, #6b4423, #4a2e15); }
+
+        /* ===== V22 办公桌风格 ===== */
+        .desk-area { position: absolute; top: 28px; left: 25px; right: 25px; bottom: 28px; touch-action: none; }
+
+        /* 办公桌 - V22 简洁风格 */
+        .desk-3d {
+            position: absolute;
+            cursor: move;
+            z-index: 10;
+            touch-action: none;
+        }
+
+        .desk-surface {
+            position: relative;
+            width: 120px;
+            height: 70px;
+            background: linear-gradient(145deg, #8B6914 0%, #a07830 50%, #8B6914 100%);
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 5px;
+            border: 2px solid #6B5040;
+            transform: scale(var(--desk-scale, 1));
+            transform-origin: top left;
+        }
+
+        /* 老师名牌 */
+        .teacher-nameplate {
+            border-radius: 3px;
+            padding: 3px 10px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            width: 100%;
+            white-space: nowrap;
+            overflow: visible;
+        }
+        /* V139 备课组长徽章（姓名后面） */
+        .teacher-nameplate .leader-badge { color: #ffd866; margin-left: 4px; text-shadow: 0 0 4px rgba(255,216,102,0.6); font-size: 17px; vertical-align: middle; }
+        /* V139 桌面备注（姓名下方）V141：11→13px */
+        .desk-note { font-size: 13px; color: rgba(255,255,255,0.9); margin-top: 2px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; line-height: 1.2; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+
+        /* 桌面信息区域 */
+        .desk-info {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 3px;
+            gap: 3px;
+        }
+
+        .subject-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* 旋转按钮 */
+        .rotate-btn {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, #4fc3f7, #2196f3);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            box-shadow: 0 3px 10px rgba(79,195,247,0.5);
+            z-index: 20;
+        }
+        .rotate-btn:hover { transform: scale(1.1); }
+        .desk-3d.edit-mode:hover .rotate-btn { display: flex; }
+
+        /* 办公桌删除按钮 */
+        .desk-delete-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 22px;
+            height: 22px;
+            background: #e74c3c;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 30;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .desk-3d.edit-mode:hover .desk-delete-btn { display: flex; }
+        .desk-3d.edit-mode .desk-delete-btn { display: flex; }
+        .desk-3d.edit-mode:hover .rotate-btn { display: flex; }
+        .desk-3d.edit-mode .rotate-btn { display: flex; }
+
+        /* 科目颜色 */
+        .c-语文 { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .c-数学 { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .c-英语 { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .c-科学 { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .c-社会 { background: linear-gradient(135deg, #f39c12, #e67e22); }
+
+        /* 编辑模式 */
+        .edit-mode .desk-area, .edit-mode { background: radial-gradient(circle, rgba(79,195,247,0.1) 1px, transparent 1px); background-size: 15px 15px; }
+        .desk-3d.edit-mode { outline: 2px dashed rgba(79,195,247,0.5); outline-offset: 3px; }
+
+.btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-danger { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+
+        /* 添加菜单 */
+        .add-menu { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: transparent; backdrop-filter: blur(20px); border-radius: 12px; padding: 8px; z-index: 100; min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: none; }
+        .add-menu-item { display: block; width: 100%; padding: 12px 16px; border: none; background: none; color: #fff; font-size: 14px; text-align: left; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
+        .add-menu-item:hover { background: rgba(255,255,255,0.1); }
+        .add-menu-item:active { background: rgba(255,255,255,0.2); }
+
+        /* 菜单弹出动画(错位弹出)- V82 */
+        .add-menu:not(.open) .add-menu-item { opacity: 0; transform: translateY(20px) scale(0.85); }
+        .add-menu.open .add-menu-item { animation: popIn 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .add-menu.open .add-menu-item:nth-child(1) { animation-delay: 0ms; }
+        .add-menu.open .add-menu-item:nth-child(2) { animation-delay: 130ms; }
+        .add-menu.open .add-menu-item:nth-child(3) { animation-delay: 260ms; }
+        .add-menu.open .add-menu-item:nth-child(4) { animation-delay: 390ms; }
+        .add-menu.open .add-menu-item:nth-child(5) { animation-delay: 520ms; }
+        .add-menu.open .add-menu-item:nth-child(6) { animation-delay: 650ms; }
+        .add-menu.open .add-menu-item:nth-child(7) { animation-delay: 780ms; }
+        .add-menu.open .add-menu-item:nth-child(8) { animation-delay: 910ms; }
+        @keyframes popIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.85); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 200; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        /* V145：通用弹窗统一居中、max-width 380、四角圆角、改用 fadeIn 淡入(替代底部抽屉) */
+        .modal { background: linear-gradient(180deg, #1a1a2e, #24243e); border-radius: 25px; width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto; padding: 22px; position: relative; animation: fadeIn 0.25s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        /* V140：详情弹窗居中淡入(替代 slideUp 从底部滑入) */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .modal-title { font-size: 18px; font-weight: 700; }
+        .modal-close { width: 34px; height: 34px; border-radius: 50%; border: none; background: rgba(255,255,255,0.1); color: #fff; font-size: 18px; cursor: pointer; }
+
+        /* 老师详情只读卡片 */
+        /* V135：老师详情弹窗居中 + 字体加大；V140：居中淡入 */
+        #teacherDetailModal { align-items: center; }
+        #teacherDetailModal .modal { position: relative; animation: fadeIn 0.25s ease; }
+        .teacher-detail-close-x { position: absolute; top: 12px; right: 12px; z-index: 1; }
+        .teacher-detail-card { text-align: center; padding: 10px 0; }
+        .teacher-detail-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 14px; }
+        .teacher-detail-subject { display: inline-block; padding: 7px 22px; border-radius: 22px; font-size: 19px; font-weight: 700; color: #fff; margin-bottom: 22px; }
+        .teacher-detail-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 19px; color: rgba(255,255,255,0.85); }
+        .teacher-detail-row:last-of-type { border-bottom: none; }
+        .teacher-detail-label { color: rgba(255,255,255,0.5); font-size: 22px; min-width: 50px; }
+        .teacher-detail-value { color: #fff; font-size: 19px; }
+        .teacher-detail-empty { color: rgba(255,255,255,0.35); font-style: italic; }
+        /* V133：电话图标红色（复用 V129 备课组长列表的染色配方）+ 备课组长金色发光 */
+        .teacher-detail-phone-icon { filter: grayscale(1) sepia(1) hue-rotate(-50deg) saturate(6); }
+        .teacher-detail-leader { color: #ffd866; font-weight: 700; text-shadow: 0 0 6px rgba(255,216,102,0.55); border-bottom-color: rgba(255,216,102,0.2) !important; }
+        .teacher-detail-leader .teacher-detail-label { color: #ffd866; filter: drop-shadow(0 0 4px rgba(255,216,102,0.5)); }
+        /* V136：修改老师选择器 */
+        .edit-teacher-picker-row { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 8px; background: rgba(255,255,255,0.06); border-radius: 10px; cursor: pointer; transition: background 0.2s; }
+        .edit-teacher-picker-row:hover { background: rgba(255,255,255,0.12); }
+        .edit-teacher-picker-row:active { background: rgba(255,255,255,0.18); }
+        .edit-teacher-picker-name { color: #fff; font-weight: 700; font-size: 16px; padding: 8px 16px; border-radius: 8px; min-width: 90px; text-align: center; }
+        .edit-teacher-picker-info { flex: 1; color: rgba(255,255,255,0.85); font-size: 14px; }
+        .edit-teacher-picker-info .leader-badge { color: #ffd866; margin-left: 4px; }
+        .edit-teacher-picker-arrow { color: rgba(255,255,255,0.4); font-size: 24px; font-weight: 300; }
+        .edit-teacher-picker-empty { text-align: center; padding: 30px 20px; color: rgba(255,255,255,0.5); }
+        .form-group { margin-bottom: 16px; }
+        .form-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-bottom: 6px; display: block; }
+        .form-input, .form-select { width: 100%; height: 46px; border: 2px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0 15px; font-size: 14px; background: rgba(255,255,255,0.05); color: #fff; }
+        .form-input:focus, .form-select:focus { outline: none; border-color: #4fc3f7; }
+        .form-input::placeholder { color: rgba(255,255,255,0.3); }
+        .form-select option { background: #1a1a2e; }
+        .form-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .form-btn { flex: 1; padding: 12px; border-radius: 12px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .form-btn-cancel { background: rgba(255,255,255,0.1); color: #fff; }
+        .form-btn-submit { background: linear-gradient(135deg, #4fc3f7, #2196f3); color: #fff; }
+        .form-btn-delete { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+        .choice-buttons { display: flex; gap: 15px; margin-top: 10px; }
+        .choice-btn { flex: 1; padding: 20px; border-radius: 16px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; background: rgba(255,255,255,0.1); color: #fff; transition: all 0.2s; }
+        .choice-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
+
+        .empty-state { text-align: center; padding: 50px 20px; color: rgba(255,255,255,0.4); }
+        .empty-state .emoji { font-size: 40px; margin-bottom: 10px; }
+
+        /* 备课组长复选框 */
+        .form-checkbox { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #fff; cursor: pointer; padding: 10px 0; }
+        .form-checkbox input[type="checkbox"] { width: 20px; height: 20px; accent-color: #4fc3f7; cursor: pointer; }
+
+        /* 备课组长Tab */
+        .lesson-leader-tab { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff !important; border-radius: 20px; margin-left: 8px; padding: 6px 14px !important; font-size: 12px; }
+        .lesson-leader-tab.active { background: linear-gradient(135deg, #e67e22, #d35400) !important; box-shadow: 0 2px 8px rgba(230,126,34,0.4); }
+
+        /* 备课组长列表 */
+        .lesson-leader-view { display: none; padding: 16px 0; }
+        .lesson-leader-view.show { display: block; }
+        .leader-grade-group { margin-bottom: 20px; }
+        .leader-grade-title { font-size: 18px; font-weight: 700; color: #f39c12; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .leader-subject-group { display: flex; align-items: flex-start; padding: 12px 16px; margin-bottom: 8px; background: rgba(255,255,255,0.05); border-radius: 12px; cursor: pointer; transition: background 0.2s; }
+        .leader-subject-group:hover { background: rgba(255,255,255,0.12); }
+        .leader-subject-group:active { background: rgba(255,255,255,0.18); }
+        .leader-subject-name { min-width: 70px; font-size: 15px; font-weight: 700; padding: 4px 12px; border-radius: 8px; text-align: center; color: #fff; margin-right: 14px; line-height: 1.4; }
+        .leader-info { flex: 1; }
+        .leader-info-name { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+        .leader-info-office { font-size: 18px; color: #fff; filter: brightness(1.5) saturate(1.3); }
+        .leader-info-phone { font-size: 17px; color: rgba(255,255,255,0.92); margin-top: 3px; filter: grayscale(1) sepia(1) hue-rotate(-50deg) saturate(6); }
+        .leader-info-note { font-size: 17px; color: #ffd866; margin-top: 2px; }
+        .leader-arrow { color: rgba(255,255,255,0.3); font-size: 18px; align-self: center; }
+        .leader-overview { padding: 0 15px 80px; }
+    </style>
+</head>
+<body>
+    <div id="schoolListPage">
+        <div class="header"><h1>学校备课组管理</h1></div>
+        <div class="search-bar"><input type="text" class="search-input" placeholder="搜索学校名称" id="searchInput"></div>
+        <div class="legend">
+            <div class="legend-item"><span class="legend-dot c-语文"></span>语文</div>
+            <div class="legend-item"><span class="legend-dot c-数学"></span>数学</div>
+            <div class="legend-item"><span class="legend-dot c-英语"></span>英语</div>
+            <div class="legend-item"><span class="legend-dot c-科学"></span>科学</div>
+            <div class="legend-item"><span class="legend-dot c-社会"></span>社会</div>
+        </div>
+        <div class="school-list" id="schoolList"></div>
+        <button class="fab" id="addSchoolFab" onclick="showAddSchool()">+</button>
+    </div>
+
+    <div id="schoolDetailPage" class="detail-page">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">← 返回</button>
+            <h1 id="detailTitle">学校名称</h1>
+        </div>
+        <div class="grade-tabs" id="gradeTabs">
+            <button class="grade-tab active" data-grade="7">七年级</button>
+            <button class="grade-tab" data-grade="8">八年级</button>
+            <button class="grade-tab" data-grade="9">九年级</button>
+            <button class="lesson-leader-tab" onclick="showLessonLeaders()">📋 备课组长</button>
+        </div>
+        <div class="grade-tabs" id="gradeTabsPrimary" style="display:none;">
+            <button class="grade-tab active" data-grade="1">一年级</button>
+            <button class="grade-tab" data-grade="2">二年级</button>
+            <button class="grade-tab" data-grade="3">三年级</button>
+            <button class="grade-tab" data-grade="4">四年级</button>
+            <button class="grade-tab" data-grade="5">五年级</button>
+            <button class="grade-tab" data-grade="6">六年级</button>
+            <button class="lesson-leader-tab" onclick="showLessonLeaders()">📋 备课组长</button>
+        </div>
+        <div class="office-list" id="officeList"></div>
+        <div class="lesson-leader-view" id="lessonLeaderView"></div>
+        <div class="office-detail-view" id="officeDetailView"></div>
+        <button class="fab" onclick="toggleOfficeMenu()" title="菜单">+</button>
+        <div class="edit-toolbar" id="editToolbar" style="display:none;"></div>
+
+        <!-- 办公室菜单(列表页和详情页通用) -->
+        <div class="add-menu" id="officeMenu" style="display:none;">
+            <button class="add-menu-item" id="menuDeleteOffice" onclick="showDeleteOffice()" style="display:none;">🗑️ 删除办公室</button>
+            <button class="add-menu-item" id="menuEditGrade" onclick="editOfficeGrade()" style="display:none;">✏️ 编辑办公室</button>
+            <button class="add-menu-item" id="menuAddOffice" onclick="showAddOffice()" style="display:none;">🏢 添加办公室</button>
+            <button class="add-menu-item" id="menuAddDoor" onclick="showAddDoor()" style="display:none;">🚪 门</button>
+            <button class="add-menu-item" id="menuAddWindow" onclick="showAddWindow()" style="display:none;">🪟 窗</button>
+            <button class="add-menu-item" id="menuAddLeader" onclick="showAddLeader()" style="display:none;">➕ 添加老师</button>
+            <button class="add-menu-item" id="menuResize" onclick="showEditTeachers()" style="display:none;">✏️ 修改老师</button>
+            <button class="add-menu-item" id="menuEditMode" onclick="toggleEditMode()" style="display:none;">⚙️ 编辑模式</button>
+            <button class="add-menu-item" onclick="exportData()">📤 导出数据</button>
+            <button class="add-menu-item" onclick="importData()">📥 导入数据</button>
+        </div>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="handleImportFile(this.files[0])">
+    </div>
+
+    <div class="modal-overlay" id="leaderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">老师信息</div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="form-group"><label class="form-label">姓名 *</label><input type="text" class="form-input" id="inputName" placeholder="请输入老师姓名"></div>
+            <div class="form-group"><label class="form-label">科目</label><select class="form-input" id="inputSubject"><option value="语文">语文 🔴</option><option value="数学">数学 🔵</option><option value="英语">英语 🟣</option><option value="科学">科学 🟢</option><option value="社会">社会 🟠</option></select></div>
+            <div class="form-group"><label class="form-label">电话</label><input type="tel" class="form-input" id="inputPhone" placeholder="如:13800138000"></div>
+            <div class="form-group"><label class="form-label">备注</label><input type="text" class="form-input" id="inputNote" placeholder="如:性格开朗"></div>
+            <div class="form-group"><label class="form-checkbox"><input type="checkbox" id="inputIsLeader"> 备课组长(学科负责人)</label></div>
+            <div class="form-actions">
+                <button class="form-btn form-btn-cancel" onclick="closeModal()">取消</button>
+                <button class="form-btn form-btn-delete" id="deleteBtn" onclick="deleteLeader()">删除</button>
+                <button class="form-btn form-btn-submit" onclick="saveLeader()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="schoolModal">
+        <div class="modal">
+            <div class="modal-header"><div class="modal-title" id="schoolModalTitle">🏫 添加学校</div><button class="modal-close" onclick="closeSchoolModal()">×</button></div>
+            <div class="form-group"><label class="form-label">学校类型</label><select class="form-input" id="inputSchoolType"><option value="middle">初中(七年级~九年级)</option><option value="primary">小学(一年级~六年级)</option></select></div>
+            <div class="form-group"><label class="form-label">学校名称 *</label><input type="text" class="form-input" id="inputSchoolName" placeholder="请输入学校名称"></div>
+            <div class="form-group"><label class="form-label">学校地址</label><input type="text" class="form-input" id="inputSchoolAddress" placeholder="请输入学校地址"></div>
+            <div class="form-actions">
+                <button class="form-btn form-btn-cancel" onclick="closeSchoolModal()">取消</button>
+                <button class="form-btn form-btn-delete" id="deleteSchoolBtn" style="display:none;" onclick="deleteSchool()">删除</button>
+                <button class="form-btn form-btn-submit" onclick="saveSchool()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="officeModal">
+        <div class="modal">
+            <div class="modal-header"><div class="modal-title">🏢 添加办公室</div><button class="modal-close" onclick="closeOfficeModal()">×</button></div>
+            <div class="form-group"><label class="form-label">办公室名称 *</label><input type="text" class="form-input" id="inputOfficeName" placeholder="如:教学楼A 301"></div>
+            <div class="form-group"><label class="form-label">宽度 (px)</label><input type="number" class="form-input" id="inputOfficeWidth" value="380" min="300" max="1000"></div>
+            <div class="form-group"><label class="form-label">高度 (px)</label><input type="number" class="form-input" id="inputOfficeHeight" value="400" min="200" max="600"></div>
+            <div class="form-actions"><button class="form-btn form-btn-cancel" onclick="closeOfficeModal()">取消</button><button class="form-btn form-btn-submit" onclick="saveOffice()">保存</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="elementChoiceModal">
+        <div class="modal">
+            <div class="modal-header"><div class="modal-title">➕ 添加</div><button class="modal-close" onclick="closeElementChoiceModal()">×</button></div>
+            <div class="choice-buttons">
+                <button class="choice-btn" onclick="showAddLeader()">👨🏫 老师</button>
+                <button class="choice-btn" onclick="showAddDoor()">🚪 门</button>
+                <button class="choice-btn" onclick="showAddWindow()">🪟 窗</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除办公室弹窗 -->
+    <div class="modal-overlay" id="deleteOfficeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">🗑️ 删除办公室</div>
+                <button class="modal-close" onclick="closeDeleteOfficeModal()">×</button>
+            </div>
+            <div id="deleteOfficeList" style="max-height:60vh;overflow-y:auto;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="teacherDetailModal">
+        <div class="modal">
+            <button class="modal-close teacher-detail-close-x" onclick="closeTeacherDetail()">×</button>
+            <div id="teacherDetailBody"></div>
+        </div>
+    </div>
+
+    <!-- V136：修改老师选择器 -->
+    <div class="modal-overlay" id="editTeacherPickerModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="editTeacherPickerTitle">✏️ 修改老师</div>
+                <button class="modal-close" onclick="closeEditTeacherPicker()">×</button>
+            </div>
+            <div id="editTeacherPickerBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // V142：页面退出/关闭/刷新/切标签时弹原生确认框（浏览器安全限制，文案由各浏览器固定显示，无法自定义）
+        // V143：退出前兜底 saveData() 一次（数据本身每次改动已自动存，这里再确保最新，确认离开/留在此页都不丢）
+        window.addEventListener('beforeunload', function (e) {
+            try { saveData(); } catch (err) { /* 退出阶段忽略存储异常 */ }
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        });
+        // V144：pagehide 兜底保存（移动端/iOS 微信 webview 对 beforeunload 支持弱，pagehide 在卸载前仍能同步写入 localStorage）
+        window.addEventListener('pagehide', function () {
+            try { saveData(); } catch (err) { /* 卸载阶段忽略存储异常 */ }
+        });
+        // 添加菜单
+        function toggleOfficeMenu() {
+            const menu = document.getElementById('officeMenu');
+            const isDetailView = document.getElementById('officeDetailView').style.display !== 'none' && document.getElementById('officeDetailView').innerHTML !== '';
+
+            if (menu.style.display === 'none') {
+                // 根据视图显示不同菜单项
+                if (isDetailView) {
+                    // 详情页:老师、门、窗、调整大小、编辑模式
+                    document.getElementById('menuAddOffice').style.display = 'none';
+                    document.getElementById('menuEditGrade').style.display = 'none';
+                    document.getElementById('menuAddLeader').style.display = 'block';
+                    document.getElementById('menuAddDoor').style.display = 'block';
+                    document.getElementById('menuAddWindow').style.display = 'block';
+                    document.getElementById('menuResize').style.display = 'block';
+                    document.getElementById('menuDeleteOffice').style.display = 'none';
+                    document.getElementById('menuEditMode').style.display = 'block';
+                } else {
+                    // 列表页:添加办公室、编辑年级名、删除办公室
+                    document.getElementById('menuAddOffice').style.display = 'block';
+                    document.getElementById('menuEditGrade').style.display = 'block';
+                    document.getElementById('menuAddLeader').style.display = 'none';
+                    document.getElementById('menuAddDoor').style.display = 'none';
+                    document.getElementById('menuAddWindow').style.display = 'none';
+                    document.getElementById('menuResize').style.display = 'none';
+                    document.getElementById('menuDeleteOffice').style.display = 'block';
+                    document.getElementById('menuEditMode').style.display = 'none';
+                }
+                menu.style.display = 'block';
+                menu.classList.add('open');
+                setTimeout(() => {
+                    document.addEventListener('click', closeOfficeMenu);
+                }, 10);
+            } else {
+                menu.classList.remove('open');
+                menu.style.display = 'none';
+            }
+        }
+
+        function closeOfficeMenu() {
+            const menu = document.getElementById('officeMenu');
+            menu.classList.remove('open');
+            menu.style.display = 'none';
+            document.removeEventListener('click', closeOfficeMenu);
+        }
+
+        // 兼容旧函数名
+        function toggleAddMenu() { toggleOfficeMenu(); }
+        function closeAddMenu() { closeOfficeMenu(); }
+
+        // V136：修改老师选择器(替换原"调整大小"入口)
+        function showEditTeachers() {
+            closeAddMenu();
+            if (!currentOffice) { alert('请先进入办公室详情'); return; }
+            const officeLeaders = leaders.filter(l => l.officeId === currentOffice);
+            const office = offices.find(o => o.id === currentOffice);
+            document.getElementById('editTeacherPickerTitle').textContent = '✏️ 修改老师 - ' + (office ? office.name : '');
+            const body = document.getElementById('editTeacherPickerBody');
+            if (officeLeaders.length === 0) {
+                body.innerHTML = '<div class="edit-teacher-picker-empty">该办公室暂无老师<br><br><button class="btn btn-primary" onclick="closeEditTeacherPicker();showAddLeaderToOffice(currentOffice);">➕ 添加老师</button></div>';
+            } else {
+                const subjectColorMap = { '语文': '#e74c3c', '数学': '#3498db', '英语': '#9b59b6', '科学': '#2ecc71', '社会': '#f39c12' };
+                body.innerHTML = officeLeaders.map(l => {
+                    const color = subjectColorMap[l.subject] || '#3498db';
+                    const leaderBadge = l.isLessonLeader ? ' <span class="leader-badge">🏅</span>' : '';
+                    const safeName = (l.name || '').replace(/[<>]/g, '');
+                    return `<div class="edit-teacher-picker-row" onclick="closeEditTeacherPicker();showLeaderDetail(${l.id});"><div class="edit-teacher-picker-name" style="background:${color};">${safeName}${leaderBadge}</div><div class="edit-teacher-picker-info">${l.subject}${l.phone ? ' · ' + l.phone : ''}</div><div class="edit-teacher-picker-arrow">›</div></div>`;
+                }).join('');
+            }
+            document.getElementById('editTeacherPickerModal').classList.add('show');
+        }
+
+        function closeEditTeacherPicker() {
+            document.getElementById('editTeacherPickerModal').classList.remove('show');
+        }
+
+        // 编辑当前年级的办公室(改名/调尺寸)
+        function editOfficeGrade() {
+            closeOfficeMenu();
+            const gradeOffices = offices.filter(o => o.schoolId === currentSchool.id && o.grade === currentGrade);
+            if (gradeOffices.length === 0) {
+                alert('当前年级暂无办公室,请先添加');
+                return;
+            }
+            if (gradeOffices.length === 1) {
+                editOffice(gradeOffices[0].id);
+                return;
+            }
+            // 多个办公室:弹选择列表
+            const list = gradeOffices.map((o, i) => `${i + 1}. ${o.name}(${o.width}×${o.height})`).join('\n');
+            const choice = prompt(`当前年级有 ${gradeOffices.length} 个办公室,输入编号选择要编辑的:\n\n${list}`, '1');
+            if (choice === null) return;
+            const idx = parseInt(choice) - 1;
+            if (isNaN(idx) || idx < 0 || idx >= gradeOffices.length) {
+                alert('编号无效');
+                return;
+            }
+            editOffice(gradeOffices[idx].id);
+        }
+
+        let schools = JSON.parse(localStorage.getItem('schools_v8')) || [
+            { id: 1, type: 'middle', name: '杭州市第一中学', address: '杭州市西湖区文三路100号' },
+            { id: 2, type: 'primary', name: '杭州市文澜小学', address: '杭州市拱墅区台州路8号' }
+        ];
+
+        let offices = JSON.parse(localStorage.getItem('offices_v8')) || [
+            { id: 1, schoolId: 1, grade: 7, name: '教学楼A 301', width: 600, height: 380, rotation: 0 },
+            { id: 2, schoolId: 1, grade: 8, name: '教学楼B 201', width: 520, height: 340, rotation: 0 },
+            { id: 3, schoolId: 1, grade: 9, name: '实验楼 102', width: 480, height: 320, rotation: 0 },
+            { id: 4, schoolId: 2, grade: 7, name: '行政楼 102', width: 440, height: 300, rotation: 0 }
+        ];
+
+        let elements = JSON.parse(localStorage.getItem('elements_v8')) || [
+            { id: 1, officeId: 1, type: 'door', x: 280, y: 350 },
+            { id: 2, officeId: 1, type: 'window', x: 50, y: 36 },
+            { id: 3, officeId: 1, type: 'window', x: 200, y: 36 },
+            { id: 4, officeId: 1, type: 'window', x: 410, y: 36 },
+            { id: 5, officeId: 2, type: 'door', x: 240, y: 310 },
+            { id: 6, officeId: 3, type: 'door', x: 220, y: 290 }
+        ];
+
+        let leaders = JSON.parse(localStorage.getItem('leaders_v8')) || [
+            { id: 1, officeId: 1, name: '王建国', subject: '语文', phone: '13800138001', note: '备课组长', isLessonLeader: true, x: 35, y: 45, rotation: 0 },
+            { id: 2, officeId: 1, name: '李明华', subject: '数学', phone: '13800138002', note: '教学骨干', isLessonLeader: false, x: 220, y: 45, rotation: 0 },
+            { id: 3, officeId: 1, name: '张丽', subject: '英语', phone: '13800138006', note: '新教师', isLessonLeader: false, x: 405, y: 45, rotation: 0 },
+            { id: 4, officeId: 1, name: '赵红梅', subject: '科学', phone: '13800138005', note: '实验员', isLessonLeader: false, x: 35, y: 190, rotation: 0 }
+        ];
+
+        // 一次性把历史 office.scale 折算进 width/height,使"输入尺寸 = 屏幕真实像素"
+        // 修复:编辑办公室尺寸时弹窗数字与房间实际大小不一致(差一个 scale 倍率)
+        offices.forEach(o => {
+            if (o && o.scale && o.scale !== 1) {
+                o.width = Math.round((o.width || 600) * o.scale);
+                o.height = Math.round((o.height || 380) * o.scale);
+                o.scale = 1;
+            }
+        });
+        saveData();
+
+        let currentSchool = null;
+        let currentGrade = 7;
+        let currentLeader = null;
+        let editMode = false;
+
+        let dragState = null;
+
+        function saveData() {
+            localStorage.setItem('schools_v8', JSON.stringify(schools));
+            localStorage.setItem('offices_v8', JSON.stringify(offices));
+            localStorage.setItem('elements_v8', JSON.stringify(elements));
+            localStorage.setItem('leaders_v8', JSON.stringify(leaders));
+        }
+
+        function loadSchools() {
+            const list = document.getElementById('schoolList');
+            const keyword = document.getElementById('searchInput').value;
+            const filtered = schools.filter(s => s.name.includes(keyword));
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="emoji">🏫</div><div>暂无学校</div></div>';
+                return;
+            }
+
+            list.innerHTML = filtered.map(school => {
+                let gradeLabels, gradeCounts;
+                if (school.type === 'primary') {
+                    gradeLabels = ['一年级','二年级','三年级','四年级','五年级','六年级'];
+                    gradeCounts = [1,2,3,4,5,6].map(g => leaders.filter(l => {
+                        const office = offices.find(o => o.id === l.officeId);
+                        return office && office.schoolId === school.id && office.grade === g;
+                    }).length);
+                } else {
+                    gradeLabels = ['七年级','八年级','九年级'];
+                    gradeCounts = [7,8,9].map(g => leaders.filter(l => {
+                        const office = offices.find(o => o.id === l.officeId);
+                        return office && office.schoolId === school.id && office.grade === g;
+                    }).length);
+                }
+                const typeLabel = school.type === 'primary' ? '🏫 小学' : '🏢 初中';
+                const statsHtml = gradeLabels.map((label, i) => `
+                    <div class="stat"><div class="stat-num">${gradeCounts[i]}</div><div class="stat-label">${label}</div></div>
+                `).join('');
+
+                const editActions = `
+                        <div class="school-actions">
+                            <button class="school-action-btn" onclick="event.stopPropagation(); showEditSchool(${school.id})">✏️ 编辑</button>
+                            <button class="school-action-btn danger" onclick="event.stopPropagation(); deleteSchoolConfirm(${school.id})">🗑️ 删除</button>
+                        </div>`;
+                return `
+                    <div class="school-card" onclick="showSchoolDetail(${school.id})">
+                        <div class="school-header">
+                            <div class="school-name">${school.name}</div>
+                            <div class="school-type-badge">${typeLabel}</div>
+                        </div>
+                        <div class="school-address">📍 ${school.address || '暂无地址'}</div>
+                        ${editActions}
+                        <div class="school-stats">${statsHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', loadSchools);
+
+        function showSchoolDetail(schoolId) {
+            currentSchool = schools.find(s => s.id === schoolId);
+            document.getElementById('detailTitle').textContent = currentSchool.name;
+            document.getElementById('schoolListPage').style.display = 'none';
+            document.getElementById('schoolDetailPage').style.display = 'block';
+
+            // 根据学校类型显示/隐藏年级标签
+            const isPrimary = currentSchool.type === 'primary';
+            document.getElementById('gradeTabs').style.display = isPrimary ? 'none' : 'flex';
+            document.getElementById('gradeTabsPrimary').style.display = isPrimary ? 'flex' : 'none';
+
+            // 设置当前年级
+            if (isPrimary) {
+                currentGrade = 1;
+                document.querySelectorAll('#gradeTabsPrimary .grade-tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('#gradeTabsPrimary .grade-tab[data-grade="1"]').classList.add('active');
+            } else {
+                currentGrade = 7;
+                document.querySelectorAll('#gradeTabs .grade-tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('#gradeTabs .grade-tab[data-grade="7"]').classList.add('active');
+            }
+            // 取消备课组长tab高亮
+            document.querySelectorAll('.lesson-leader-tab').forEach(t => t.classList.remove('active'));
+
+            renderOffices();
+        }
+
+        function goBack() {
+            document.getElementById('schoolListPage').style.display = 'block';
+            document.getElementById('schoolDetailPage').style.display = 'none';
+            editMode = false;
+        }
+
+        document.querySelectorAll('.grade-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.grade-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.lesson-leader-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentGrade = parseInt(this.dataset.grade);
+                renderOffices();
+            });
+        });
+
+        function renderOffices() {
+            // 返回列表前自动保存（编辑模式下的所有操作）
+            saveData();
+
+            // 退出编辑模式并重置 UI
+            editMode = false;
+            const menuBtn = document.getElementById('menuEditMode');
+            if (menuBtn) {
+                menuBtn.textContent = '✏️ 编辑模式';
+                menuBtn.classList.remove('btn-danger');
+            }
+            const toolbar = document.getElementById('editToolbar');
+            if (toolbar) toolbar.style.display = 'none';
+
+            const list = document.getElementById('officeList');
+            const detailView = document.getElementById('officeDetailView');
+            const gradeOffices = offices.filter(o => o.schoolId === currentSchool.id && o.grade === currentGrade);
+
+            // 隐藏详情视图,显示列表视图
+            detailView.style.display = 'none';
+            list.style.display = 'block';
+
+            // 隐藏备课组长视图（双保险：清类名+直接置display，必须放在 return 之前）
+            const leaderViewEl = document.getElementById('lessonLeaderView');
+            leaderViewEl.classList.remove('show');
+            leaderViewEl.style.display = 'none';
+
+            if (gradeOffices.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="emoji">🏢</div><div>暂无办公室</div></div>';
+                return;
+            }
+
+            // 显示办公室号列表
+            list.innerHTML = `
+                <div class="office-number-list">
+                    ${gradeOffices.map(office => {
+                        const leaderCount = leaders.filter(l => l.officeId === office.id).length;
+                        return `
+                            <div class="office-number-item" onclick="showOfficeDetail(${office.id})">
+                                <div>
+                                    <div class="office-number">🏢 ${office.name}</div>
+                                    <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px;">${leaderCount} 位老师</div>
+                                </div>
+                                <div class="office-number-arrow">→</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function showLessonLeaders() {
+            const leaderView = document.getElementById('lessonLeaderView');
+            const list = document.getElementById('officeList');
+            const detailView = document.getElementById('officeDetailView');
+
+            // 隐藏办公室列表和详情,显示备课组长视图
+            list.style.display = 'none';
+            detailView.style.display = 'none';
+            leaderView.classList.add('show');
+            leaderView.style.display = 'block';
+
+            // 高亮备课组长tab,取消年级高亮
+            document.querySelectorAll('.lesson-leader-tab').forEach(t => t.classList.add('active'));
+            document.querySelectorAll('.grade-tab').forEach(t => t.classList.remove('active'));
+
+            // 获取当前学校所有备课组长
+            const schoolOffices = offices.filter(o => o.schoolId === currentSchool.id);
+            const schoolOfficeIds = schoolOffices.map(o => o.id);
+            const lessonLeaders = leaders.filter(l => schoolOfficeIds.includes(l.officeId) && l.isLessonLeader);
+
+            if (lessonLeaders.length === 0) {
+                const gradeLabel = currentSchool.type === 'primary' ? '年级' : '年级';
+                leaderView.innerHTML = '<div class="empty-state"><div class="emoji">📋</div><div>暂无备课组长</div><div style="font-size:13px;margin-top:8px;color:rgba(255,255,255,0.4);">在老师信息中设置「备课组长」后显示</div></div>';
+                return;
+            }
+
+            // 按年级分组
+            const gradeGroups = {};
+            lessonLeaders.forEach(leader => {
+                const office = schoolOffices.find(o => o.id === leader.officeId);
+                if (!office) return;
+                const grade = office.grade;
+                if (!gradeGroups[grade]) gradeGroups[grade] = [];
+                gradeGroups[grade].push({ leader, office });
+            });
+
+            const sortedGrades = Object.keys(gradeGroups).sort((a, b) => parseInt(a) - parseInt(b));
+            const gradeSuffix = currentSchool.type === 'primary' ? '年级' : '年级';
+
+            // 各学科颜色映射
+            const subjectColors = {
+                '语文': 'c-语文',
+                '数学': 'c-数学',
+                '英语': 'c-英语',
+                '科学': 'c-科学',
+                '社会': 'c-社会'
+            };
+
+            let html = '<div class="leader-overview">';
+
+            sortedGrades.forEach(grade => {
+                // 按科目排序
+                const subjectOrder = ['语文', '数学', '英语', '科学', '社会'];
+                gradeGroups[grade].sort((a, b) => subjectOrder.indexOf(a.leader.subject) - subjectOrder.indexOf(b.leader.subject));
+
+                html += `<div class="leader-grade-group">`;
+                html += `<div class="leader-grade-title">${grade}${gradeSuffix}</div>`;
+
+                gradeGroups[grade].forEach(item => {
+                    const colorClass = subjectColors[item.leader.subject] || '';
+                    html += `
+                        <div class="leader-subject-group" onclick="navigateToOffice(${item.office.id})">
+                            <div class="leader-subject-name ${colorClass}">${item.leader.subject}</div>
+                            <div class="leader-info">
+                                <div class="leader-info-name">${item.leader.name}</div>
+                                <div class="leader-info-office">🏢 ${item.office.name}</div>
+                                ${item.leader.phone ? `<div class="leader-info-phone">☎️ ${item.leader.phone}</div>` : ''}
+                                ${item.leader.note ? `<div class="leader-info-note">📌 ${item.leader.note}</div>` : ''}
+                            </div>
+                            <div class="leader-arrow">→</div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            });
+
+            html += '</div>';
+            leaderView.innerHTML = html;
+        }
+
+        function navigateToOffice(officeId) {
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+
+            // 切换到对应的学校和年级
+            if (office.schoolId !== currentSchool.id) {
+                // 需要先切换到目标学校(略)
+            }
+
+            // 切换到目标年级
+            currentGrade = office.grade;
+
+            // 更新年级tab高亮
+            document.querySelectorAll('.grade-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.lesson-leader-tab').forEach(t => t.classList.remove('active'));
+
+            // 激活对应年级tab
+            const targetTab = document.querySelectorAll('#gradeTabs .grade-tab[data-grade="' + office.grade + '"], #gradeTabsPrimary .grade-tab[data-grade="' + office.grade + '"]');
+            targetTab.forEach(t => t.classList.add('active'));
+
+            // 显示办公室列表并跳转到该办公室详情
+            renderOffices();
+            showOfficeDetail(officeId);
+        }
+
+        function showOfficeDetail(officeId) {
+            const list = document.getElementById('officeList');
+            const detailView = document.getElementById('officeDetailView');
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+            currentOffice = officeId;
+            
+            // 隐藏列表视图和备课组长视图，显示详情视图
+            list.style.display = 'none';
+            const lv = document.getElementById('lessonLeaderView');
+            lv.classList.remove('show');
+            lv.style.display = 'none';
+            detailView.style.display = 'block';
+
+            const officeElements = elements.filter(e => e.officeId === officeId);
+            const officeLeaders = leaders.filter(l => l.officeId === officeId);
+
+            const scale = office.scale || 1;
+            const scaledW = Math.round((office.width || 600) * (office.scale || 1));
+            const scaledH = Math.round((office.height || 380) * (office.scale || 1));
+
+            // 门窗HTML
+            const elementsHtml = officeElements.map(el => {
+                const cls = el.type === 'door' ? 'door-el' : 'window-el';
+                const scale = el.scale || 1; // 元素自身的缩放
+                const officeScale = office.scale || 1; // 办公室的缩放
+                const rotation = el.rotation || 0; // 元素自身的旋转
+
+                // 门和窗都随办公室缩放
+                const baseW = el.type === 'door' ? 40 : 50;
+                const baseH = el.type === 'door' ? 70 : 38;
+
+                return `
+                    <div class="room-element ${cls} ${editMode ? 'edit-mode' : ''}" data-id="${el.id}" data-type="element" data-office="${officeId}"
+                         style="left:${Math.round(el.x * officeScale)}px; top:${Math.round(el.y * officeScale)}px; width:${Math.round(baseW * officeScale * scale)}px; height:${Math.round(baseH * officeScale * scale)}px; transform: rotate(${rotation}deg);">
+                        <div class="rotate-btn" onclick="event.stopPropagation(); rotateElement(${el.id})">🔄</div>
+                        <div class="delete-btn" onclick="event.stopPropagation(); deleteElement(${el.id})">×</div>
+                    </div>
+                `;
+            }).join('');
+
+            const desksHtml = officeLeaders.map(leader => {
+                const subjectClass = 'c-' + leader.subject;
+                const rotation = leader.rotation || 0;
+                return `
+                    <div class="desk-3d ${editMode ? 'edit-mode' : ''}" data-id="${leader.id}" data-office="${officeId}" onclick="${editMode ? 'event.stopPropagation();' : `showTeacherDetail(${leader.id})`}" style="cursor:${editMode ? 'default' : 'pointer'}; left:${Math.round(leader.x * scale)}px; top:${Math.round(leader.y * scale)}px; transform: rotate(${rotation}deg);">
+                        <div class="desk-surface">
+                            <div class="teacher-nameplate ${subjectClass}">${leader.name}${leader.isLessonLeader ? ' <span class="leader-badge">🏅</span>' : ''}</div>
+                            ${leader.note ? `<div class="desk-note">📌 ${leader.note}</div>` : ''}
+                        </div>
+                        <div class="rotate-btn" onclick="event.stopPropagation(); rotateDesk(${leader.id})">🔄</div>
+                        <div class="desk-delete-btn" onclick="event.stopPropagation(); deleteLeaderQuick(${leader.id})">×</div>
+                    </div>
+                `;
+            }).join('');
+
+            detailView.innerHTML = `
+                <div style="padding:15px;">
+                    <div class="office-nav" style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">
+                        <button class="back-btn" onclick="renderOffices()">← 返回列表</button>
+                        <span style="color:rgba(255,255,255,0.5);">|</span>
+                        <span style="color:#4fc3f7;font-weight:600;font-size:22px;">${office.name}</span>
+                        ${editMode ? '<button class="back-btn" onclick="rotateOffice(' + officeId + ')" style="margin-left:auto;">🔄 旋转办公室</button>' : ''}
+                    </div>
+                    <div class="office-wrapper">
+                        <div class="office-room" id="room-${officeId}" data-office="${officeId}"
+                             style="--scale:${office.scale || 1}; width:${scaledW}px; height:${scaledH}px; left:${office.x || 0}px; top:${office.y || 0}px; transform: rotate(${office.rotation || 0}deg);"
+                             class="${editMode ? 'office-movable' : ''}"
+                             onmousedown="startOfficeMove(event, ${officeId})" ontouchstart="startOfficeMove(event, ${officeId})">
+                            <!-- 调整大小的手柄 -->
+                            <div class="resize-handle resize-se" data-direction="se" onmousedown="startResizeDrag(event, 'se', ${officeId})" ontouchstart="startResizeDrag(event, 'se', ${officeId})"></div>
+                            <div class="resize-handle resize-sw" data-direction="sw" onmousedown="startResizeDrag(event, 'sw', ${officeId})" ontouchstart="startResizeDrag(event, 'sw', ${officeId})"></div>
+                            <div class="resize-handle resize-ne" data-direction="ne" onmousedown="startResizeDrag(event, 'ne', ${officeId})" ontouchstart="startResizeDrag(event, 'ne', ${officeId})"></div>
+                            <div class="resize-handle resize-nw" data-direction="nw" onmousedown="startResizeDrag(event, 'nw', ${officeId})" ontouchstart="startResizeDrag(event, 'nw', ${officeId})"></div>
+                            <div class="resize-handle resize-n" data-direction="n" onmousedown="startResizeDrag(event, 'n', ${officeId})" ontouchstart="startResizeDrag(event, 'n', ${officeId})"></div>
+                            <div class="resize-handle resize-s" data-direction="s" onmousedown="startResizeDrag(event, 's', ${officeId})" ontouchstart="startResizeDrag(event, 's', ${officeId})"></div>
+                            <div class="resize-handle resize-e" data-direction="e" onmousedown="startResizeDrag(event, 'e', ${officeId})" ontouchstart="startResizeDrag(event, 'e', ${officeId})"></div>
+                            <div class="resize-handle resize-w" data-direction="w" onmousedown="startResizeDrag(event, 'w', ${officeId})" ontouchstart="startResizeDrag(event, 'w', ${officeId})"></div>
+                            <!-- 仅保留地板 -->
+                            <div class="floor-3d"></div>
+                            <!-- 门窗 -->
+                            ${elementsHtml}
+                            <!-- 办公桌 -->
+                            <div class="desk-area">${desksHtml}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            bindDragEvents();
+            setupPinchZoom();
+
+            // 办公室自由定位:未设置过坐标则居中,并设置画布高度
+            const room = document.getElementById(`room-${officeId}`);
+            const wrapper = room.closest('.office-wrapper');
+            if (office.x == null || office.y == null) {
+                const wrapW = wrapper.clientWidth || 600;
+                const roomW = room.offsetWidth || scaledW;
+                office.x = Math.max(0, Math.round((wrapW - roomW) / 2));
+                office.y = 20;
+                room.style.left = office.x + 'px';
+                room.style.top = office.y + 'px';
+                saveData();
+            } else {
+                room.style.left = office.x + 'px';
+                room.style.top = office.y + 'px';
+            }
+            wrapper.style.minHeight = Math.max(500, room.offsetHeight + 60) + 'px';
+        }
+
+        // 选中元素
+        function selectElement(elId, type) {
+            // 门窗选中效果已在CSS中处理
+        }
+
+        // 旋转办公桌
+        function rotateDesk(leaderId) {
+            const leader = leaders.find(l => l.id === leaderId);
+            if (!leader) return;
+
+            leader.rotation = (leader.rotation + 90) % 360;
+            saveData();
+            showOfficeDetail(leader.officeId);
+        }
+
+        // 旋转门窗
+        function rotateElement(elId) {
+            const element = elements.find(el => el.id === elId);
+            if (!element) return;
+
+            element.rotation = (element.rotation + 90) % 360;
+            saveData();
+            showOfficeDetail(element.officeId);
+        }
+
+        // 旋转办公室
+        function rotateOffice(officeId) {
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+
+            office.rotation = ((office.rotation || 0) + 90) % 360;
+            saveData();
+            showOfficeDetail(officeId);
+        }
+
+        function bindDragEvents() {
+            // 办公桌拖拽
+            document.querySelectorAll('.desk-3d').forEach(el => {
+                el.onmousedown = startDeskDrag;
+                el.ontouchstart = startDeskDrag;
+            });
+
+            // 门窗拖拽
+            document.querySelectorAll('.room-element').forEach(el => {
+                el.onmousedown = startElementDrag;
+                el.ontouchstart = startElementDrag;
+            });
+
+            document.onmousemove = onDrag;
+            document.ontouchmove = onDrag;
+            document.onmouseup = endDrag;
+            document.ontouchend = endDrag;
+        }
+
+        // 双指缩放(仅移动端)
+        let pinchState = null;
+        let currentOfficeZoom = 1; // 办公室缩放级别
+        function setupPinchZoom() {
+            // 重置缩放
+            document.body.style.setProperty('--desk-scale', '1');
+            currentOfficeZoom = 1; // 重置办公室缩放级别
+            const indicator = document.getElementById('pinchIndicator');
+            if (indicator) indicator.textContent = '1.0x';
+
+            // 根据模式绑定不同的缩放行为
+            const room = document.querySelector('.room'); // 办公室容器
+            const deskArea = document.querySelector('.desk-area'); // 办公桌区域
+
+            if (editMode && room) {
+                // 编辑模式:缩放整个办公室
+                setupOfficePinchZoom(room);
+            } else if (!editMode && deskArea) {
+                // 浏览模式:只缩放办公桌
+                setupDeskPinchZoom(deskArea);
+            }
+        }
+
+        function setupOfficePinchZoom(room) {
+            // 编辑模式:办公室背景支持双指缩放(缩放整个办公室)
+            room.style.transformOrigin = '0 0'; // 设置缩放中心点为左上角
+
+            room.ontouchstart = function(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // 如果有进行中的拖动,取消它
+                    if (dragState) dragState = null;
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
+                    const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                    pinchState = { startDist: dist, startScale: currentOfficeZoom };
+                    showPinchIndicator();
+                }
+            };
+
+            room.ontouchmove = function(e) {
+                if (!pinchState || e.touches.length !== 2) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                const ratio = dist / pinchState.startDist;
+                const newScale = Math.max(0.5, Math.min(3.0, pinchState.startScale * ratio));
+                currentOfficeZoom = newScale;
+                room.style.transform = 'scale(' + newScale.toFixed(2) + ')'; // 使用 transform: scale() 缩放整个办公室
+                const ind = document.getElementById('pinchIndicator');
+                if (ind) ind.textContent = newScale.toFixed(1) + 'x';
+            };
+
+            room.ontouchend = function(e) {
+                if (e.touches.length < 2) {
+                    pinchState = null;
+                    setTimeout(hidePinchIndicator, 800);
+                }
+            };
+        }
+
+        function setupDeskPinchZoom(deskArea) {
+            // 浏览模式:只缩放办公桌
+            deskArea.ontouchstart = function(e) {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // 如果有进行中的拖动,取消它
+                    if (dragState) dragState = null;
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
+                    const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                    const currentScale = parseFloat(getComputedStyle(document.body).getPropertyValue('--desk-scale')) || 1;
+                    pinchState = { startDist: dist, startScale: currentScale };
+                    showPinchIndicator();
+                }
+            };
+
+            deskArea.ontouchmove = function(e) {
+                if (!pinchState || e.touches.length !== 2) return;
+                e.preventDefault();
+                e.stopPropagation();
+                const t1 = e.touches[0];
+                const t2 = e.touches[1];
+                const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                const ratio = dist / pinchState.startDist;
+                const newScale = Math.max(0.5, Math.min(1.5, pinchState.startScale * ratio));
+                document.body.style.setProperty('--desk-scale', newScale.toFixed(2));
+                const ind = document.getElementById('pinchIndicator');
+                if (ind) ind.textContent = newScale.toFixed(1) + 'x';
+            };
+
+            deskArea.ontouchend = function(e) {
+                if (e.touches.length < 2) {
+                    pinchState = null;
+                    setTimeout(hidePinchIndicator, 800);
+                }
+            };
+        }
+
+        function showPinchIndicator() {
+            let ind = document.getElementById('pinchIndicator');
+            if (!ind) {
+                ind = document.createElement('div');
+                ind.id = 'pinchIndicator';
+                ind.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.75);color:#fff;padding:12px 24px;border-radius:20px;font-size:18px;font-weight:600;z-index:9999;pointer-events:none;transition:opacity 0.3s;opacity:1;';
+                document.body.appendChild(ind);
+            }
+            ind.style.opacity = '1';
+        }
+
+        function hidePinchIndicator() {
+            const ind = document.getElementById('pinchIndicator');
+            if (ind) ind.style.opacity = '0';
+        }
+
+        function startElementDrag(e) {
+            if (!editMode) return; // 浏览模式禁止拖动
+            if (e.touches && e.touches.length >= 2) return; // 双指缩放时跳过
+            if (e.target.classList.contains('delete-btn') || e.target.classList.contains('rotate-btn')) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const target = e.currentTarget;
+            const id = parseInt(target.dataset.id);
+            const officeId = parseInt(target.dataset.office);
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // 按下瞬间就锁定抓取偏移(局部坐标+反旋),避免拖动第一帧跳动
+            const roomEl = document.getElementById(`room-${officeId}`);
+            const roomRect = roomEl ? roomEl.getBoundingClientRect() : null;
+            const officeEntity = offices.find(o => o.id === officeId);
+            const officeRotation = officeEntity ? (officeEntity.rotation || 0) : 0;
+
+            // 门窗当前在room局部坐标中的位置
+            const curLeft = parseInt(target.style.left) || 0;
+            const curTop = parseInt(target.style.top) || 0;
+
+            // 手指在room局部坐标
+            let gx = roomRect ? (clientX - roomRect.left) : clientX;
+            let gy = roomRect ? (clientY - roomRect.top) : clientY;
+
+            // 反旋到门窗局部坐标,消除办公室旋转导致的方向偏移
+            if (officeRotation !== 0 && roomRect) {
+                const rad = -officeRotation * Math.PI / 180;
+                const cosR = Math.cos(rad), sinR = Math.sin(rad);
+                const cx = roomRect.width / 2;
+                const cy = roomRect.height / 2;
+                const dx = gx - cx, dy = gy - cy;
+                gx = cx + dx * cosR - dy * sinR;
+                gy = cy + dx * sinR + dy * cosR;
+            }
+
+            // 抓取点相对门窗左上角的局部偏移(拖动全程固定)
+            const offsetX = gx - curLeft;
+            const offsetY = gy - curTop;
+
+            dragState = { type: 'element', id, officeId, el: target, startX: clientX, startY: clientY, moved: false, offsetX, offsetY };
+
+            // 长按 500ms 显示删除按钮,拖拽时自动取消(编辑模式下按钮已始终显示,此处保留兼容)
+            dragState.longPressTimer = setTimeout(() => {
+                if (dragState && dragState.el) {
+                    dragState.el.classList.add('edit-mode');
+                    dragState.longPressTriggered = true;
+                }
+            }, 500);
+        }
+
+        function startResizeDrag(e, direction, officeId) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+
+            const room = document.getElementById(`room-${officeId}`);
+            const currentW = parseInt(room.style.width);
+            const currentH = parseInt(room.style.height);
+
+            dragState = {
+                type: 'resize',
+                direction,
+                officeId,
+                startX: clientX,
+                startY: clientY,
+                moved: false,
+                startW: currentW,
+                startH: currentH,
+                office: office
+            };
+        }
+
+        // 拖动整个办公室移动位置
+        function startOfficeMove(e, officeId) {
+            if (!editMode) return; // 仅编辑模式可拖拽移动
+            const room = document.getElementById(`room-${officeId}`);
+            // 排除可拖拽子元素(办公桌、门窗、缩放手柄),其余区域(框架/墙/空地)均可移动办公室
+            if (e.target.closest && e.target.closest('.desk-3d, .room-element, .resize-handle')) return;
+            if (!room.contains(e.target)) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+
+            if (office.x == null) office.x = 0;
+            if (office.y == null) office.y = 0;
+
+            dragState = {
+                type: 'office-move',
+                officeId,
+                startX: clientX,
+                startY: clientY,
+                startOfficeX: office.x,
+                startOfficeY: office.y,
+                moved: true,
+                office: office
+            };
+        }
+
+        function startDeskDrag(e) {
+            if (!editMode) return; // 浏览模式禁止拖动
+            if (e.touches && e.touches.length >= 2) return; // 双指缩放时跳过
+            if (e.target.classList.contains('rotate-btn') || e.target.classList.contains('desk-delete-btn')) return;
+
+            e.preventDefault();
+
+            const target = e.currentTarget;
+            const id = parseInt(target.dataset.id);
+            const officeId = parseInt(target.dataset.office);
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // 按下瞬间就锁定抓取偏移(局部坐标+反旋),避免拖动第一帧跳动
+            const deskAreaEl = document.querySelector('.desk-area');
+            const deskAreaRect = deskAreaEl ? deskAreaEl.getBoundingClientRect() : null;
+            const officeEntity = offices.find(o => o.id === officeId);
+            const officeRotation = officeEntity ? (officeEntity.rotation || 0) : 0;
+
+            // 办公桌当前在 desk-area 局部坐标中的位置
+            const curLeft = parseInt(target.style.left) || 0;
+            const curTop = parseInt(target.style.top) || 0;
+
+            // 手指在 desk-area 局部坐标(屏幕坐标 - deskAreaRect 左上)
+            let gx = deskAreaRect ? (clientX - deskAreaRect.left) : clientX;
+            let gy = deskAreaRect ? (clientY - deskAreaRect.top) : clientY;
+
+            // 反旋到 desk 局部坐标,消除办公室旋转导致的方向偏移
+            if (officeRotation !== 0 && deskAreaRect) {
+                const rad = -officeRotation * Math.PI / 180;
+                const cosR = Math.cos(rad), sinR = Math.sin(rad);
+                const cx = deskAreaRect.width / 2;
+                const cy = deskAreaRect.height / 2;
+                const dx = gx - cx, dy = gy - cy;
+                gx = cx + dx * cosR - dy * sinR;
+                gy = cy + dx * sinR + dy * cosR;
+            }
+
+            // 抓取点相对办公桌左上角的局部偏移(拖动全程固定)
+            const offsetX = gx - curLeft;
+            const offsetY = gy - curTop;
+
+            dragState = { type: 'desk', id, officeId, el: target, startX: clientX, startY: clientY, moved: false, offsetX, offsetY };
+        }
+
+        function onDrag(e) {
+            if (!dragState) return;
+            e.preventDefault();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // 2px阈值才认定是拖动,防止误触(办公桌和门窗偏移均已在startDrag时锁定,此处不再重算)
+            if (!dragState.moved && (Math.abs(clientX - dragState.startX)  > 2 || Math.abs(clientY - dragState.startY) > 2)) {
+                dragState.moved = true;
+                // offsetX/Y已在startDeskDrag/startElementDrag按下时锁定,不再用getBoundingClientRect重算
+            }
+
+            if (!dragState.moved) return;
+
+            const { el, type } = dragState;
+            const room = document.getElementById(`room-${dragState.officeId}`);
+            const roomRect = room.getBoundingClientRect();
+
+            if (type === 'desk') {
+                // 方案5:原点改用desk-area rect(修A偏移)+指针坐标反旋(修B旋转干扰)
+                const deskAreaEl = document.querySelector('.desk-area');
+                const deskAreaRect = deskAreaEl ? deskAreaEl.getBoundingClientRect() : roomRect;
+                const officeEntity = offices.find(o => o.id === dragState.officeId);
+                const officeRotation = officeEntity ? (officeEntity.rotation || 0) : 0;
+
+                // 手指在屏幕上的坐标
+                let px = clientX - deskAreaRect.left;
+                let py = clientY - deskAreaRect.top;
+
+                // 指针坐标反旋:undo办公室旋转,得到desk-area局部坐标
+                if (officeRotation !== 0) {
+                    const rad = -officeRotation * Math.PI / 180;
+                    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+                    // desk-area中心
+                    const cx = deskAreaRect.width / 2;
+                    const cy = deskAreaRect.height / 2;
+                    const dx = px - cx, dy = py - cy;
+                    px = Math.round(cx + dx * cosR - dy * sinR);
+                    py = Math.round(cy + dx * sinR + dy * cosR);
+                }
+
+                const newX = px - dragState.offsetX;
+                const newY = py - dragState.offsetY;
+
+                el.style.left = newX + 'px';
+                el.style.top = newY + 'px';
+            } else if (type === 'resize') {
+                // 调整办公室大小
+                const deltaX = clientX - dragState.startX;
+                const deltaY = clientY - dragState.startY;
+                const direction = dragState.direction;
+                const minW = 300;
+                const minH = 200;
+
+                let newW = dragState.startW;
+                let newH = dragState.startH;
+
+                // 根据方向调整宽度和高度
+                if (direction.includes('e')) newW = Math.max(minW, dragState.startW + deltaX);
+                if (direction.includes('w')) newW = Math.max(minW, dragState.startW - deltaX);
+                if (direction.includes('s')) newH = Math.max(minH, dragState.startH + deltaY);
+                if (direction.includes('n')) newH = Math.max(minH, dragState.startH - deltaY);
+
+                // 更新办公室房间大小
+                room.style.width = newW + 'px';
+                room.style.height = newH + 'px';
+
+            } else if (type === 'office-move') {
+                // 移动整个办公室位置
+                const deltaX = clientX - dragState.startX;
+                const deltaY = clientY - dragState.startY;
+                const newX = Math.max(0, dragState.startOfficeX + deltaX);
+                const newY = Math.max(0, dragState.startOfficeY + deltaY);
+                room.style.left = newX + 'px';
+                room.style.top = newY + 'px';
+
+            } else {
+                // 门窗拖拽 - 指针坐标反旋(与办公桌一致),offset已在startElementDrag锁定
+                const isDoor = el.classList.contains('door-el');
+                const officeEntity = offices.find(o => o.id === dragState.officeId);
+                const officeScale = officeEntity ? (officeEntity.scale || 1) : 1;
+                const officeRotation = officeEntity ? (officeEntity.rotation || 0) : 0;
+                const element = elements.find(e => e.id === dragState.id);
+                const elementScale = element ? (element.scale || 1) : 1;
+
+                const baseW = isDoor ? 40 : 10;
+                const baseH = isDoor ? 70 : 8;
+
+                const elW = Math.round(baseW * officeScale * elementScale);
+                const elH = Math.round(baseH * officeScale * elementScale);
+
+                // 指针坐标反旋:undo办公室旋转,得到room局部坐标
+                let px = clientX - roomRect.left;
+                let py = clientY - roomRect.top;
+                if (officeRotation !== 0) {
+                    const rad = -officeRotation * Math.PI / 180;
+                    const cosR = Math.cos(rad), sinR = Math.sin(rad);
+                    const cx = roomRect.width / 2;
+                    const cy = roomRect.height / 2;
+                    const dx = px - cx, dy = py - cy;
+                    px = Math.round(cx + dx * cosR - dy * sinR);
+                    py = Math.round(cy + dx * sinR + dy * cosR);
+                }
+
+                let newX = px - dragState.offsetX;
+                let newY = py - dragState.offsetY;
+
+                // V122: 门窗与办公桌一样自由移动,取消边界限制(不再 clamp)
+                el.style.left = newX + 'px';
+                el.style.top = newY + 'px';
+            }
+        }
+
+        function endDrag() {
+            if (!dragState) return;
+
+            // 清理长按定时器
+            if (dragState.longPressTimer) {
+                clearTimeout(dragState.longPressTimer);
+                dragState.longPressTimer = null;
+            }
+
+            if (dragState.moved) {
+                if (dragState.type === 'desk') {
+                    const leader = leaders.find(l => l.id === dragState.id);
+                    if (leader) {
+                        // V66存法:直接读style(视觉像素),渲染时乘scale,自动抵消
+                        leader.x = parseInt(dragState.el.style.left) || 0;
+                        leader.y = parseInt(dragState.el.style.top) || 0;
+                        saveData();
+                    }
+                } else if (dragState.type === 'resize') {
+                    // 保存调整大小后的办公室尺寸
+                    const office = dragState.office;
+                    const room = document.getElementById(`room-${dragState.officeId}`);
+
+                    // 计算基础的 width/height(除以 scale)
+                    const scale = office.scale || 1;
+                    office.width = Math.round(parseInt(room.style.width) / scale);
+                    office.height = Math.round(parseInt(room.style.height) / scale);
+
+                    saveData();
+                } else if (dragState.type === 'office-move') {
+                    // 保存办公室新位置
+                    const office = dragState.office;
+                    const room = document.getElementById(`room-${dragState.officeId}`);
+                    office.x = parseInt(room.style.left) || 0;
+                    office.y = parseInt(room.style.top) || 0;
+                    saveData();
+                } else {
+                    const element = elements.find(el => el.id === dragState.id);
+                    if (element) {
+                        element.x = parseInt(dragState.el.style.left);
+                        element.y = parseInt(dragState.el.style.top);
+                        saveData();
+                    }
+                }
+            } else if (dragState.type === 'desk' && editMode) {
+                // 编辑模式下,点击办公桌(未拖拽)则跳转到编辑老师信息
+                showLeaderDetail(dragState.id);
+            }
+
+            dragState = null;
+        }
+
+        function toggleEditMode() {
+            editMode = !editMode;
+            const btn = document.getElementById('menuEditMode');
+            btn.textContent = editMode ? '✅ 完成' : '⚙️ 编辑模式';
+            btn.classList.toggle('btn-danger', editMode);
+
+            document.getElementById('editToolbar').style.display = editMode ? 'flex' : 'none';
+
+            document.querySelectorAll('.desk-area, .desk-3d, .room-element').forEach(el => {
+                el.classList.toggle('edit-mode', editMode);
+            });
+
+            // 显示/隐藏调整大小的手柄
+            document.querySelectorAll('.resize-handle').forEach(el => {
+                el.classList.toggle('visible', editMode);
+            });
+
+            // 编辑模式下,办公室框架变为可拖拽移动
+            document.querySelectorAll('.office-room').forEach(el => {
+                el.classList.toggle('office-movable', editMode);
+            });
+
+            // 编辑模式切换后立即重渲染办公室详情页，使"🔄 旋转办公室"按钮即时出现（条件渲染依赖 editMode）
+            if (currentOffice) {
+                showOfficeDetail(currentOffice);
+            }
+        }
+
+        function updateDeskScale(val) {
+            // 保留以免其他代码调用(已废弃)
+        }
+
+        // ========== 门窗管理 ==========
+        // 缩放门窗(循环:1.0 → 1.2 → 1.5 → 2.0 → 1.0)
+        function resizeElement(id) {
+            const element = elements.find(el => el.id === id);
+            if (!element) return;
+
+            // 缩放级别循环
+            const scaleLevels = [1.0, 1.2, 1.5, 2.0];
+            const currentScale = element.scale || 1.0;
+            const currentIndex = scaleLevels.indexOf(currentScale);
+            const nextIndex = (currentIndex + 1) % scaleLevels.length;
+            const newScale = scaleLevels[nextIndex];
+
+            element.scale = newScale;
+            saveData();
+            showOfficeDetail(element.officeId);
+
+            // 显示缩放提示
+            const scaleNames = ['1x', '1.2x', '1.5x', '2x'];
+            showPinchIndicator();
+            const ind = document.getElementById('pinchIndicator');
+            if (ind) ind.textContent = `门窗缩放: ${scaleNames[nextIndex]}`;
+            setTimeout(hidePinchIndicator, 800);
+        }
+
+        // 添加门到指定办公室
+        function addDoorToOffice(officeId) {
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+            if (!editMode) { alert('请先点击「✏️ 编辑」进入编辑模式'); return; }
+
+            const scale = office.scale || 1;
+            const scaledW = Math.round((office.width || 500) * scale);
+            const scaledH = Math.round((office.height || 300) * scale);
+
+            elements.push({
+                id: Date.now(),
+                officeId: officeId,
+                type: 'door',
+                x: Math.round(scaledW / 2 - 20),  // 中间位置
+                y: Math.round(scaledH / 2 - 35),
+                rotation: 0  // 默认旋转角度
+            });
+            saveData();
+
+            showOfficeDetail(officeId);  // 直接刷新当前视图
+        }
+
+        // 添加窗到指定办公室
+        function addWindowToOffice(officeId) {
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+            if (!editMode) { alert('请先点击「✏️ 编辑」进入编辑模式'); return; }
+
+            const scale = office.scale || 1;
+            const scaledW = Math.round((office.width || 500) * scale);
+            const scaledH = Math.round((office.height || 300) * scale);
+
+            elements.push({
+                id: Date.now(),
+                officeId: officeId,
+                type: 'window',
+                x: Math.round(scaledW / 2 - 25),  // 中间位置
+                y: Math.round(scaledH / 2 - 17),
+                rotation: 0  // 默认旋转角度
+            });
+            saveData();
+
+            showOfficeDetail(officeId);  // 直接刷新当前视图
+        }
+
+        // 底部工具栏添加门(添加到当前年级第一个办公室)
+        // 添加元素选择弹窗
+        function showAddElementChoice() {
+            const gradeOffices = offices.filter(o => o.schoolId === currentSchool.id && o.grade === currentGrade);
+            if (gradeOffices.length === 0) {
+                alert('请先添加办公室');
+                return;
+            }
+            document.getElementById('elementChoiceModal').classList.add('show');
+        }
+
+        function closeElementChoiceModal() {
+            document.getElementById('elementChoiceModal').classList.remove('show');
+        }
+
+        function showDeleteOffice() {
+            closeAddMenu();
+            const gradeOffices = offices.filter(o => o.schoolId === currentSchool?.id && o.grade === currentGrade);
+            if (gradeOffices.length === 0) {
+                alert('当前年级没有办公室');
+                return;
+            }
+            const list = document.getElementById('deleteOfficeList');
+            list.innerHTML = gradeOffices.map(o => {
+                const leaderCount = leaders.filter(l => l.officeId === o.id).length;
+                return `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08);">
+                        <div>
+                            <div style="font-size:15px;font-weight:600;">🏢 ${o.name}</div>
+                            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px;">${leaderCount} 位老师</div>
+                        </div>
+                        <button class="form-btn form-btn-delete" onclick="deleteOffice(${o.id})">删除</button>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('deleteOfficeModal').classList.add('show');
+        }
+
+        function closeDeleteOfficeModal() {
+            document.getElementById('deleteOfficeModal').classList.remove('show');
+        }
+
+        function showAddDoor() {
+            closeAddMenu();
+            closeElementChoiceModal();
+            const gradeOffices = offices.filter(o => o.schoolId === currentSchool.id && o.grade === currentGrade);
+            if (gradeOffices.length === 0) {
+                alert('请先添加办公室');
+                return;
+            }
+            addDoorToOffice(gradeOffices[0].id);
+        }
+
+        function showAddWindow() {
+            closeAddMenu();
+            closeElementChoiceModal();
+            const gradeOffices = offices.filter(o => o.schoolId === currentSchool.id && o.grade === currentGrade);
+            if (gradeOffices.length === 0) {
+                alert('请先添加办公室');
+                return;
+            }
+            addWindowToOffice(gradeOffices[0].id);
+        }
+
+        // 删除门窗
+        function deleteElement(elId) {
+            if (!editMode) { alert('请先点击「✏️ 编辑」进入编辑模式'); return; }
+            if (!confirm('确定删除这个门/窗吗?')) return;
+            // 先找到该元素所属的办公室ID
+            const el = elements.find(e => e.id === elId);
+            const officeId = el ? el.officeId : null;
+            elements = elements.filter(e => e.id !== elId);
+            saveData();
+            // 留在当前办公室视图,不返回列表
+            if (officeId) {
+                showOfficeDetail(officeId);
+            } else {
+                renderOffices();
+            }
+        }
+
+        // 实时更新办公室尺寸
+        function updateOfficeSizeLive(officeId, prop, value) {
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+            office[prop] = parseInt(value);
+            document.getElementById(prop === 'width' ? 'widthVal-' + officeId : 'heightVal-' + officeId).textContent = value;
+            document.getElementById(`room-${officeId}`).style[prop] = value + 'px';
+            saveData();
+        }
+
+        // 长按门窗显示删除按钮(集成在 startElementDrag/onDrag/endDrag 中)
+
+        // 等比缩放办公室
+        function updateOfficeScale(officeId, scalePercent) {
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+
+            const scale = parseInt(scalePercent) / 100;
+            office.scale = scale;
+
+            const scaledW = Math.round(office.width * scale);
+            const scaledH = Math.round(office.height * scale);
+            const scaledLeft = Math.round(25 * scale);
+            const scaledTop = Math.round(28 * scale);
+            const scaledBottom = Math.round(35 * scale);
+
+            const room = document.getElementById(`room-${officeId}`);
+            const area = document.getElementById(`area-${officeId}`);
+            const wallBack = room.querySelector('.wall-back');
+
+            room.style.width = scaledW + 'px';
+            room.style.height = scaledH + 'px';
+            wallBack.style.width = scaledW + 'px';
+            area.style.left = scaledLeft + 'px';
+            area.style.right = scaledLeft + 'px';
+            area.style.top = scaledTop + 'px';
+            area.style.bottom = scaledBottom + 'px';
+
+            // 办公室缩放时,重新渲染整个视图以确保桌子位置正确
+            showOfficeDetail(officeId);
+
+            document.getElementById(`scaleVal-${officeId}`).textContent = scale.toFixed(1);
+            saveData();
+        }
+
+        // ========== 老师管理 ==========
+        function showLeaderDetail(leaderId) {
+            currentLeader = leaders.find(l => l.id === leaderId);
+            if (!currentLeader) return;
+
+            document.getElementById('modalTitle').textContent = '✏️ ' + currentLeader.name;
+            document.getElementById('inputName').value = currentLeader.name;
+            document.getElementById('inputSubject').value = currentLeader.subject;
+            document.getElementById('inputPhone').value = currentLeader.phone || '';
+            document.getElementById('inputNote').value = currentLeader.note || '';
+            document.getElementById('inputIsLeader').checked = currentLeader.isLessonLeader || false;
+            document.getElementById('deleteBtn').style.display = 'block';
+            document.getElementById('leaderModal').classList.add('show');
+        }
+
+        // 浏览模式点击办公桌查看老师详情（只读）
+        function showTeacherDetail(leaderId) {
+            const leader = leaders.find(l => l.id === leaderId);
+            if (!leader) return;
+            const subjectColorMap = {
+                '语文': '#e74c3c', '数学': '#3498db', '英语': '#9b59b6',
+                '科学': '#2ecc71', '社会': '#f39c12'
+            };
+            const color = subjectColorMap[leader.subject] || '#3498db';
+            const body = document.getElementById('teacherDetailBody');
+            body.innerHTML = `
+                <div class="teacher-detail-card">
+                    <div class="teacher-detail-name">${leader.name}</div>
+                    <div class="teacher-detail-subject" style="background:${color};">${leader.subject}</div>
+                    <div class="teacher-detail-row">
+                        <span class="teacher-detail-label teacher-detail-phone-icon">☎️</span>
+                        <span class="teacher-detail-value">${leader.phone || '<span class="teacher-detail-empty">未填写</span>'}</span>
+                    </div>
+                    <div class="teacher-detail-row">
+                        <span class="teacher-detail-label">📌</span>
+                        <span class="teacher-detail-value">${leader.note || '<span class="teacher-detail-empty">无备注</span>'}</span>
+                    </div>
+                    ${leader.isLessonLeader ? '<div class="teacher-detail-row teacher-detail-leader"><span class="teacher-detail-label">🏅</span><span class="teacher-detail-value">备课组长</span></div>' : ''}
+                </div>
+            `;
+            document.getElementById('teacherDetailModal').classList.add('show');
+        }
+        function closeTeacherDetail() {
+            document.getElementById('teacherDetailModal').classList.remove('show');
+        }
+
+        function editLeader(leaderId) {
+            showLeaderDetail(leaderId);
+        }
+
+        // 添加老师
+        function showAddLeader() {
+            closeAddMenu();
+            const gradeOffices = offices.filter(o => o.schoolId === currentSchool.id && o.grade === currentGrade);
+            if (gradeOffices.length === 0) {
+                alert('请先添加办公室');
+                return;
+            }
+            // 切换到第一个办公室并打开添加老师弹窗
+            showOfficeDetail(gradeOffices[0].id);
+            showAddLeaderToOffice(gradeOffices[0].id);
+        }
+
+        function showAddLeaderToOffice(officeId) {
+            currentLeader = null;
+            currentOffice = officeId;
+            document.getElementById('modalTitle').textContent = '➕ 添加老师';
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputSubject').value = '语文';
+            document.getElementById('inputPhone').value = '';
+            document.getElementById('inputNote').value = '';
+            document.getElementById('inputIsLeader').checked = false;
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('leaderModal').classList.add('show');
+        }
+
+        function deleteLeaderQuick(leaderId) {
+            if (!confirm('确定删除这位老师吗?')) return;
+            leaders = leaders.filter(l => l.id !== leaderId);
+            saveData();
+            showOfficeDetail(currentOffice);
+        }
+
+        function closeModal() {
+            document.getElementById('leaderModal').classList.remove('show');
+            currentLeader = null;
+        }
+
+        function saveLeader() {
+            const name = document.getElementById('inputName').value.trim();
+            if (!name) { alert('请输入老师姓名'); return; }
+
+            if (currentLeader) {
+                currentLeader.name = name;
+                currentLeader.subject = document.getElementById('inputSubject').value;
+                currentLeader.phone = document.getElementById('inputPhone').value;
+                currentLeader.note = document.getElementById('inputNote').value;
+                currentLeader.isLessonLeader = document.getElementById('inputIsLeader').checked;
+            } else {
+                leaders.push({
+                    id: Date.now(),
+                    officeId: currentOffice,
+                    name: name,
+                    subject: document.getElementById('inputSubject').value,
+                    phone: document.getElementById('inputPhone').value,
+                    note: document.getElementById('inputNote').value,
+                    isLessonLeader: document.getElementById('inputIsLeader').checked,
+                    x: 25,
+                    y: 60 + Math.random() * 50,
+                    rotation: 0
+                });
+            }
+
+            saveData();
+            closeModal();
+            showOfficeDetail(currentOffice);
+        }
+
+        function deleteLeader() {
+            if (!currentLeader) return;
+            if (!confirm('确定删除这位老师吗?')) return;
+
+            leaders = leaders.filter(l => l.id !== currentLeader.id);
+            saveData();
+            closeModal();
+            showOfficeDetail(currentOffice);
+        }
+
+        // ========== 办公室管理 ==========
+        function showAddOffice() {
+            document.getElementById('inputOfficeName').value = '';
+            document.getElementById('inputOfficeWidth').value = 380;
+            document.getElementById('inputOfficeHeight').value = 400;
+            currentOffice = null;
+            document.getElementById('officeModal').classList.add('show');
+        }
+
+        function editOffice(officeId) {
+            const office = offices.find(o => o.id === officeId);
+            if (!office) return;
+
+            document.getElementById('inputOfficeName').value = office.name;
+            document.getElementById('inputOfficeWidth').value = office.width;
+            document.getElementById('inputOfficeHeight').value = office.height;
+            currentOffice = officeId;
+            document.getElementById('officeModal').classList.add('show');
+        }
+
+        function closeOfficeModal() {
+            document.getElementById('officeModal').classList.remove('show');
+            currentOffice = null;
+        }
+
+        function saveOffice() {
+            const name = document.getElementById('inputOfficeName').value.trim();
+            if (!name) { alert('请输入办公室名称'); return; }
+
+            const width = parseInt(document.getElementById('inputOfficeWidth').value);
+            const height = parseInt(document.getElementById('inputOfficeHeight').value);
+
+            if (currentOffice) {
+                const office = offices.find(o => o.id === currentOffice);
+                if (office) { office.name = name; office.width = width; office.height = height; }
+            } else {
+                offices.push({ id: Date.now(), schoolId: currentSchool.id, grade: currentGrade, name, width, height });
+            }
+
+            saveData();
+            closeOfficeModal();
+            renderOffices();
+        }
+
+        function deleteOfficeConfirm(officeId) { deleteOffice(officeId); }
+        function deleteOffice(officeId) {
+            const office = offices.find(o => o.id === officeId);
+            const teacherCount = leaders.filter(l => l.officeId === officeId).length;
+            const elementCount = elements.filter(e => e.officeId === officeId).length;
+
+            if (!confirm(`⚠️ 再次确认!\n\n删除「${office.name}」将同时删除:\n• ${teacherCount} 位老师\n• ${elementCount} 个门/窗\n\n此操作不可恢复,确定要删除吗?`)) return;
+
+            if (!confirm(`🔥 最后确认!\n\n确定删除「${office.name}」吗?\n删除后所有数据将无法恢复!`)) return;
+
+            offices = offices.filter(o => o.id !== officeId);
+            elements = elements.filter(e => e.officeId !== officeId);
+            leaders = leaders.filter(l => l.officeId !== officeId);
+            saveData();
+            closeDeleteOfficeModal();
+            renderOffices();
+        }
+
+        // ========== 学校管理 ==========
+        function showAddSchool() {
+            currentSchool = null;
+            document.getElementById('schoolModalTitle').textContent = '🏫 添加学校';
+            document.getElementById('inputSchoolName').value = '';
+            document.getElementById('inputSchoolAddress').value = '';
+            document.getElementById('inputSchoolType').value = 'middle';
+            document.getElementById('inputSchoolType').disabled = false;
+            document.getElementById('deleteSchoolBtn').style.display = 'none';
+            document.getElementById('schoolModal').classList.add('show');
+        }
+
+        function showEditSchool(schoolId) {
+            currentSchool = schools.find(s => s.id === schoolId);
+            document.getElementById('schoolModalTitle').textContent = '✏️ 编辑学校';
+            document.getElementById('inputSchoolName').value = currentSchool.name;
+            document.getElementById('inputSchoolAddress').value = currentSchool.address || '';
+            document.getElementById('inputSchoolType').value = currentSchool.type || 'middle';
+            document.getElementById('inputSchoolType').disabled = false;
+            document.getElementById('deleteSchoolBtn').style.display = 'inline-block';
+            document.getElementById('schoolModal').classList.add('show');
+        }
+
+        function closeSchoolModal() {
+            document.getElementById('schoolModal').classList.remove('show');
+            currentSchool = null;
+        }
+
+        function saveSchool() {
+            const name = document.getElementById('inputSchoolName').value.trim();
+            if (!name) { alert('请输入学校名称'); return; }
+
+            const type = document.getElementById('inputSchoolType').value;
+
+            if (currentSchool) {
+                currentSchool.name = name;
+                currentSchool.address = document.getElementById('inputSchoolAddress').value;
+                currentSchool.type = type;
+            } else {
+                schools.push({
+                    id: Date.now(),
+                    type: type,
+                    name: name,
+                    address: document.getElementById('inputSchoolAddress').value
+                });
+            }
+
+            saveData();
+            closeSchoolModal();
+            loadSchools();
+        }
+
+        function deleteSchoolConfirm(schoolId) {
+            const school = schools.find(s => s.id === schoolId);
+            if (!school) return;
+
+            const officeCount = offices.filter(o => o.schoolId === schoolId).length;
+            const leaderCount = leaders.filter(l => {
+                const office = offices.find(o => o.id === l.officeId);
+                return office && office.schoolId === schoolId;
+            }).length;
+
+            if (!confirm(`⚠️ 确认删除「${school.name}」?\n\n将同时删除:\n• ${officeCount} 个办公室\n• ${leaderCount} 位老师\n\n此操作不可恢复!`)) return;
+
+            deleteSchool(schoolId);
+        }
+
+        function deleteSchool(schoolId) {
+            const officeIds = offices.filter(o => o.schoolId === schoolId).map(o => o.id);
+            offices = offices.filter(o => o.schoolId !== schoolId);
+            elements = elements.filter(e => !officeIds.includes(e.officeId));
+            leaders = leaders.filter(l => !officeIds.includes(l.officeId));
+            schools = schools.filter(s => s.id !== schoolId);
+            saveData();
+            closeSchoolModal();
+            loadSchools();
+        }
+
+        // ========== 数据导出/导入 ==========
+        function exportData() {
+            toggleOfficeMenu();
+            const data = {
+                _version: 8,
+                _exportedAt: new Date().toLocaleString('zh-CN'),
+                schools: schools,
+                offices: offices,
+                elements: elements,
+                leaders: leaders
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const d = new Date();
+            a.href = url;
+            a.download = 'school-manager-' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            toggleOfficeMenu();
+            document.getElementById('importFileInput').click();
+        }
+
+        function handleImportFile(file) {
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) {
+                alert('⚠️ 文件过大（超过 10MB），请选择正确的备份文件');
+                document.getElementById('importFileInput').value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data._version || !data.schools || !data.offices || !data.elements || !data.leaders) {
+                        alert('⚠️ 文件格式不正确，缺少必要字段');
+                        return;
+                    }
+                    const schoolCount = data.schools.length;
+                    const officeCount = data.offices.length;
+                    if (!confirm('📥 确认导入？\n\n将用备份数据覆盖当前所有数据：\n• ' + schoolCount + ' 所学校\n• ' + officeCount + ' 个办公室\n\n确定继续吗？')) return;
+                    schools = data.schools;
+                    offices = data.offices;
+                    elements = data.elements;
+                    leaders = data.leaders;
+                    saveData();
+                    if (currentSchool) {
+                        const restoredSchool = schools.find(s => s.id === currentSchool.id);
+                        if (restoredSchool) {
+                            currentSchool = restoredSchool;
+                            showSchoolDetail(restoredSchool.id);
+                        } else {
+                            currentSchool = null;
+                            loadSchools();
+                        }
+                    } else {
+                        loadSchools();
+                    }
+                    alert('✅ 导入成功！共恢复 ' + schoolCount + ' 所学校。');
+                } catch (err) {
+                    alert('⚠️ 文件解析失败，请选择正确的 JSON 备份文件');
+                }
+            };
+            reader.readAsText(file);
+            document.getElementById('importFileInput').value = '';
+        }
+
+        loadSchools();
+    </script>
+</body>
+</html>
+
